@@ -1,6 +1,12 @@
 #include <avr/io.h>
 #include "i2c.h"
 
+/*
+Bound on TWINT poll loops - protects against a hung bus (glitch,
+loose wire, stuck slave) freezing the whole program forever.
+*/
+#define TWI_TIMEOUT 10000
+
 void twi_init(void)
 {
     /*
@@ -29,8 +35,13 @@ uint8_t twi_start(void)
     /*
     Wait for TWINT to go high again (I2C op has finished)
     */
+    uint16_t timeout = TWI_TIMEOUT;
     while (!(TWCR & (1 << TWINT)))
     {
+        if (--timeout == 0)
+        {
+            return 1;
+        }
     }
 
     /*
@@ -69,8 +80,13 @@ uint8_t twi_write(uint8_t data)
     /*
     Wait for TWINT to go high again (I2C op has completed)
     */
+    uint16_t timeout = TWI_TIMEOUT;
     while (!(TWCR & (1 << TWINT)))
     {
+        if (--timeout == 0)
+        {
+            return 1;
+        }
     }
 
     /*
@@ -80,6 +96,8 @@ uint8_t twi_write(uint8_t data)
     if (status == 0x18)
         result = 0;
     else if (status == 0x28)
+        result = 0;
+    else if (status == 0x40)
         result = 0;
     else
         result = 1;
@@ -100,8 +118,14 @@ uint8_t twi_read_ack(void)
     /*
     Wait for TWINT to go high (I2C op has completed)
     */
+    uint16_t timeout = TWI_TIMEOUT;
     while (!(TWCR & (1 << TWINT)))
     {
+        if (--timeout == 0)
+        {
+            twi_stop();
+            return 0;
+        }
     }
 
     /*
@@ -123,8 +147,14 @@ uint8_t twi_read_nack(void)
     /*
     Wait for TWINT to go high (I2C op has completed)
     */
+    uint16_t timeout = TWI_TIMEOUT;
     while (!(TWCR & (1 << TWINT)))
     {
+        if (--timeout == 0)
+        {
+            twi_stop();
+            return 0;
+        }
     }
 
     /*

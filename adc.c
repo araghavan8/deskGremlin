@@ -26,7 +26,8 @@ uint16_t adc_read()
     /* Set ADCSC to 1 to start conversion */
     ADCSRA |= (1 << ADSC);
 
-    while (!(ADCSRA & (1 << ADSC)))
+    /* ADSC is cleared by hardware when the conversion finishes */
+    while (ADCSRA & (1 << ADSC))
         ;
 
     uint8_t low = ADCL;

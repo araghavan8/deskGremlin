@@ -74,3 +74,10 @@ void uart_print_i16(int16_t n)
     }
     uart_print_u16((uint16_t)n);
 }
+
+void uart_print_hex8(uint8_t val)
+{
+    const char digits[] = "0123456789ABCDEF";
+    uart_putc(digits[(val >> 4) & 0x0F]);
+    uart_putc(digits[val & 0x0F]);
+}

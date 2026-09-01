@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include "mpu6050.h"
 #include "i2c.h"
+#include "uart.h"
 
 void mpu6050_init(void)
 {
@@ -15,11 +16,11 @@ void mpu6050_init(void)
 
     /*
     Point bus to right device and specify R/W mode
-        Device address - 0x69
+        Device address - 0x68
         R/W mode - 0 (W)
-        Byte to write - 0x68 << 1 | 0 = 0xD2
+        Byte to write - 0x68 << 1 | 0 = 0xD0
     */
-    twi_write(0xD2);
+    twi_write(0xD0);
 
     /*
     Send register address for PWR_MGMT_1 register
@@ -50,11 +51,11 @@ void mpu6050_read_accel(int16_t *x, int16_t *y, int16_t *z)
 
     /*
     Point bus to right device and specify R/W mode
-        Device address - 0x69
+        Device address - 0x68
         R/W mode - 0 (W)
-        Byte to write - 0x69 << 1 | 0 = 0xD2
+        Byte to write - 0x68 << 1 | 0 = 0xD0
     */
-    twi_write(0xD2);
+    twi_write(0xD0);
 
     /*
     Send register address for first accel register
@@ -68,11 +69,11 @@ void mpu6050_read_accel(int16_t *x, int16_t *y, int16_t *z)
 
     /*
     Point bus to right device and specify R/W mode
-        Device address - 0x69
+        Device address - 0x68
         R/W mode - 1 (R)
-        Byte to write - 0x69 << 1 | 1 = 0xD3
+        Byte to write - 0x68 << 1 | 1 = 0xD1
     */
-    twi_write(0xD3);
+    twi_write(0xD1);
 
     /*
     Read acceleration registers
@@ -96,9 +97,24 @@ void mpu6050_read_accel(int16_t *x, int16_t *y, int16_t *z)
     twi_stop();
 
     /*
+    Debug: print raw register bytes in hex to check for stuck/repeated
+    values (comms bug) vs. genuinely small readings (mounting/orientation)
+    */
+    uart_puts("RAW X:");
+    uart_print_hex8(x_high);
+    uart_print_hex8(x_low);
+    uart_puts(" Y:");
+    uart_print_hex8(y_high);
+    uart_print_hex8(y_low);
+    uart_puts(" Z:");
+    uart_print_hex8(z_high);
+    uart_print_hex8(z_low);
+    uart_puts("\r\n");
+
+    /*
     Generate 16-bit values for X,Y,Z coords
     */
-    *x = (int16_t)(x_high << 8 | x_low);
-    *y = (int16_t)(y_high << 8 | y_low);
-    *z = (int16_t)(z_high << 8 | z_low);
+    *x = (int16_t)(((int16_t)x_high << 8) | x_low);
+    *y = (int16_t)(((int16_t)y_high << 8) | y_low);
+    *z = (int16_t)(((int16_t)z_high << 8) | z_low);
 }

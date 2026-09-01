@@ -16,7 +16,7 @@ LDFLAGS = -mmcu=$(MCU)
 
 # --- Files ---
 TARGET = main
-SRC    = main.c uart.c adc.c timer.c i2c.c mpu6050.c ds1307.c
+SRC    = main.c uart.c adc.c timer.c i2c.c mpu6050.c ds1307.c lcd.c
 
 # --- Rules ---
 all: $(TARGET).hex
