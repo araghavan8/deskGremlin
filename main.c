@@ -1,12 +1,36 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 #include "uart.h"
 #include "adc.h"
 #include "timer.h"
-// #include "i2c.h"
-// #include "mpu6050.h"
-// #include "ds1307.h"
 #include "lcd.h"
+
+#define BUZZER_DDR  DDRB
+#define BUZZER_PORT PORTB
+#define BUZZER_PIN  PB4
+#define BUZZER_ON()  BUZZER_PORT |= (1 << BUZZER_PIN)
+#define BUZZER_OFF() BUZZER_PORT &= ~(1 << BUZZER_PIN)
+
+#define RGB_DDR   DDRB
+#define RGB_R_PIN PB3
+#define RGB_G_PIN PB2
+#define RGB_B_PIN PB1
+
+static void beep(uint16_t ms)
+{
+    BUZZER_ON();
+    for (uint16_t i = 0; i < ms; i++)
+        _delay_ms(1);
+    BUZZER_OFF();
+}
+
+static void rgb_set(uint8_t r, uint8_t g, uint8_t b)
+{
+    if (r) PORTB |= (1 << RGB_R_PIN); else PORTB &= ~(1 << RGB_R_PIN);
+    if (g) PORTB |= (1 << RGB_G_PIN); else PORTB &= ~(1 << RGB_G_PIN);
+    if (b) PORTB |= (1 << RGB_B_PIN); else PORTB &= ~(1 << RGB_B_PIN);
+}
 
 int main(void)
 {
@@ -15,20 +39,32 @@ int main(void)
     uart_init();
     adc_init();
     timer_init();
-    // twi_init();
-    // mpu6050_init();
-    // ds1307_init();
-
     lcd_init();
-    lcd_print("Desk Gremlin");
-    lcd_set_cursor(0, 1);
-    lcd_print("is alive.");
+
+    BUZZER_DDR |= (1 << BUZZER_PIN);
+    BUZZER_PORT &= ~(1 << BUZZER_PIN);
+
+    RGB_DDR |= (1 << RGB_R_PIN) | (1 << RGB_G_PIN) | (1 << RGB_B_PIN);
 
     sei();
 
-    uart_puts("Desk Gremlin is alive.\r\n");
+    // Boot sequence
+    rgb_set(0, 0, 1);           // blue while waking up
+    lcd_print("  Waking up...");
+    _delay_ms(1500);
+    lcd_clear();
+    
+    rgb_set(1, 0, 0);
+    beep(100);
+    beep(100);
+    beep(100);
+    
+    lcd_print(" Desk Gremlin");
+    lcd_set_cursor(0, 1);
+    lcd_print("  is alive! :)");
+    beep(80);
+    _delay_ms(1000);
 
-    uint16_t count = 0;
 
     while (1)
     {
@@ -36,44 +72,47 @@ int main(void)
         {
             tick_flag = 0;
 
+            PORTB ^= (1 << PB5);
+
             static uint8_t tick_count = 0;
             tick_count++;
 
-            PORTB ^= (1 << PB5);
-
-            if (tick_count >= 20)
+            if (tick_count >= 10)
             {
                 tick_count = 0;
 
-                uart_puts("Blink #");
-                uart_print_u16(count);
-                count++;
-                uart_puts("\r\n");
+                uint16_t light = adc_read();
+
+                lcd_clear();
+                lcd_set_cursor(0, 0);
+
+                if (light > 600) {
+                    // Dark — red
+                    rgb_set(0, 1, 0);
+                    lcd_print("  (x_x)  HELLO?");
+                    lcd_set_cursor(0, 1);
+                    lcd_print("It's so dark..");
+                    beep(300);
+
+                } else if (light < 150) {
+                    // Very bright — white
+                    rgb_set(1, 1, 1);
+                    lcd_print("  (O_O)  OUCH!!");
+                    lcd_set_cursor(0, 1);
+                    lcd_print("Too bright!!");
+                    beep(300);
+
+                } else {
+                    // Normal — green
+                    rgb_set(1, 0, 0);
+                    lcd_print("  (^_^)  Hi!");
+                    lcd_set_cursor(0, 1);
+                    lcd_print("There you are!!");
+                }
 
                 uart_puts("Light: ");
-                uint16_t photoval = adc_read();
-                uart_print_u16(photoval);
+                uart_print_u16(light);
                 uart_puts("\r\n");
-
-                // int16_t x, y, z;
-                // mpu6050_read_accel(&x, &y, &z);
-                // uart_puts("X :");
-                // uart_print_i16(x);
-                // uart_puts("Y :");
-                // uart_print_i16(y);
-                // uart_puts("Z :");
-                // uart_print_i16(z);
-                // uart_puts("\r\n");
-
-                // uint8_t hours, minutes, seconds;
-                // ds1307_read_time(&hours, &minutes, &seconds);
-                // uart_puts("Hours: ");
-                // uart_print_u16(hours);
-                // uart_puts("Minutes: ");
-                // uart_print_u16(minutes);
-                // uart_puts("Seconds: ");
-                // uart_print_u16(seconds);
-                // uart_puts("\r\n");
             }
         }
     }
