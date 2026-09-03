@@ -65,6 +65,10 @@ int main(void)
     beep(80);
     _delay_ms(1000);
 
+    uart_puts("Desk Gremlin is alive !! :)");
+    uart_puts("\r\n");
+    uart_puts("\n");    
+
 
     while (1)
     {
@@ -83,11 +87,18 @@ int main(void)
 
                 uint16_t light = adc_read();
 
+                uart_puts("Light: ");
+                uart_print_u16(light);
+                uart_puts("\r");
+
                 lcd_clear();
                 lcd_set_cursor(0, 0);
 
                 if (light > 600) {
                     // Dark — red
+                    uart_puts("Too Dark !!");
+                    uart_puts("\r\n");
+                    uart_puts("\n");
                     rgb_set(0, 1, 0);
                     lcd_print("  (x_x)  HELLO?");
                     lcd_set_cursor(0, 1);
@@ -96,6 +107,9 @@ int main(void)
 
                 } else if (light < 150) {
                     // Very bright — white
+                    uart_puts("Too Bright !!");
+                    uart_puts("\r\n");
+                    uart_puts("\n");
                     rgb_set(1, 1, 1);
                     lcd_print("  (O_O)  OUCH!!");
                     lcd_set_cursor(0, 1);
@@ -104,15 +118,14 @@ int main(void)
 
                 } else {
                     // Normal — green
+                    uart_puts("Perfect !!");
+                    uart_puts("\r\n");
+                    uart_puts("\n");
                     rgb_set(1, 0, 0);
                     lcd_print("  (^_^)  Hi!");
                     lcd_set_cursor(0, 1);
                     lcd_print("There you are!!");
                 }
-
-                uart_puts("Light: ");
-                uart_print_u16(light);
-                uart_puts("\r\n");
             }
         }
     }

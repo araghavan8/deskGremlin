@@ -2,7 +2,7 @@
 MCU        = atmega328p
 F_CPU      = 16000000UL
 BAUD_RATE  = 9600
-PORT       = /dev/ttyACM0
+PORT       = /dev/ttyACM1
 PROGRAMMER = arduino
 
 # --- Toolchain ---
